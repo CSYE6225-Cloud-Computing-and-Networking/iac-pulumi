@@ -1,0 +1,30 @@
+config:
+  aws-pulumi:AZ: us-east-1a us-east-1b us-east-1c
+  aws-pulumi:AZ[0]: us-east-1a
+  aws-pulumi:AZ[1]: us-east-1b
+  aws-pulumi:AZ[2]: us-east-1c
+  aws-pulumi:INTERNET_GATEWAY: gw
+  aws-pulumi:REGION: us-east-1
+  aws-pulumi:ROUTE_TABLE_PRIVATE: route_table_private
+  aws-pulumi:ROUTE_TABLE_PUBLIC: route_table_public
+  aws-pulumi:SUBNET_PRIVATE: 10.0.4.0/24 10.0.5.0/24 10.0.6.0/24
+  aws-pulumi:SUBNET_PRIVATE[0]: 10.0.4.0/24
+  aws-pulumi:SUBNET_PRIVATE[1]: 10.0.5.0/24
+  aws-pulumi:SUBNET_PRIVATE[2]: 10.0.6.0/24
+  aws-pulumi:SUBNET_PRIVATE_1: subnet_private_1
+  aws-pulumi:SUBNET_PRIVATE_2: subnet_private_2
+  aws-pulumi:SUBNET_PRIVATE_3: subnet_private_3
+  aws-pulumi:SUBNET_PUBLIC: 10.0.1.0/24 10.0.2.0/24 10.0.3.0/24
+  aws-pulumi:SUBNET_PUBLIC[0]: 10.0.1.0/24
+  aws-pulumi:SUBNET_PUBLIC[1]: 10.0.2.0/24
+  aws-pulumi:SUBNET_PUBLIC[2]: 10.0.3.0/24
+  aws-pulumi:SUBNET_PUBLIC_1: subnet_public_1
+  aws-pulumi:SUBNET_PUBLIC_2: subnet_public_2
+  aws-pulumi:SUBNET_PUBLIC_3: subnet_public_3
+  aws-pulumi:VPC_CIDR: 10.0.0.0/16
+  aws-pulumi:VPC_NAME: main
+  aws-pulumi:data.AZ[0]: us-east-1a
+  aws-pulumi:data.AZ[1]: us-east-1b
+  aws-pulumi:data.AZ[2]: us-east-1c
+  aws:profile: dev
+  aws:region: ap-south-1
