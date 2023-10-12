@@ -27,4 +27,4 @@ config:
   aws-pulumi:data.AZ[1]: us-east-1b
   aws-pulumi:data.AZ[2]: us-east-1c
   aws:profile: dev
-  aws:region: us-east-1
+  aws:region: ap-south-1
