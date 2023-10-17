@@ -19,11 +19,11 @@ jobs:
         aws-region: us-east-1
 
     - name: Packer init
-        run: packer init ./ami/aws.pkr.hcl
+      run: packer init ./ami/aws.pkr.hcl
     
     - name: Packer format
-        run: packer fmt -check -on-error=abort ./ami/aws.pkr.hcl
+      run: packer fmt -check -on-error=abort ./ami/aws.pkr.hcl
     
     - name: Packer validate
-        run: packer validate -on-error=abort ./ami/aws.pkr.hcl
+      run: packer validate -on-error=abort ./ami/aws.pkr.hcl
    
