@@ -112,6 +112,31 @@ available.then(result => {
 
     }
 
+    //create ec2
+    const custom_ami = aws.ec2.getAmi({
+        mostRecent: true,
+        filters: [
+            // {
+            //     name: "name",
+            //     values: ["csye*"],
+            // },
+            {
+                name: "virtualization-type",
+                values: ["hvm"],
+            },
+        ],
+    });
+
+    console.log('ami id-',custom_ami.then(custom_ami => console.log(custom_ami.id)))
+
+    const web = new aws.ec2.Instance("web", {
+        ami: custom_ami.then(custom_ami => custom_ami.id),
+        instanceType: "t2.micro",
+        tags: {
+            Name: "demo_ec2",
+        },
+    });
+
     
 });
 
