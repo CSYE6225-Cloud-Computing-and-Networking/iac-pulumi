@@ -112,6 +112,45 @@ available.then(result => {
 
     }
 
+    //ec2 security group
+
+    const app_sec_gr = new aws.ec2.SecurityGroup("application_security_group", {
+        description: "Allow TLS inbound traffic",
+        vpcId: main.id,
+        ingress: [{
+            description: "TLS from VPC 443",
+            fromPort: 443,
+            toPort: 443,
+            protocol: "tcp",
+            cidrBlocks: [ "0.0.0.0/0" ],
+        },
+        {
+            description: "TLS from VPC 22",
+            fromPort: 22,
+            toPort: 22,
+            protocol: "tcp",
+            cidrBlocks: [ "0.0.0.0/0" ],
+        },
+        {
+            description: "TLS from VPC 80",
+            fromPort: 80,
+            toPort: 80,
+            protocol: "tcp",
+            cidrBlocks: [ "0.0.0.0/0" ],
+        },
+        {
+            description: "TLS from VPC 8000",
+            fromPort: 8000,
+            toPort: 8000,
+            protocol: "tcp",
+            cidrBlocks: [ "0.0.0.0/0" ],
+        }],
+        tags: {
+            Name: "application_security_group",
+        },
+    });
+
+
     
 });
 
