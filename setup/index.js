@@ -186,6 +186,12 @@ available.then(result => {
         tags: {
             Name: "demo_ec2_1",
         },
+        rootBlockDevice: {
+            deleteOnTermination: true,
+            volumeSize: 25, 
+            volumeType: "gp2", 
+             
+        },
     });
 
     
