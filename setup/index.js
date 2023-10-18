@@ -81,6 +81,8 @@ available.then(result => {
         },
     });
 
+    let subnet_pub_1;
+
     for(let i=0 ;i<az_count; i++){
         let subpub = new aws.ec2.Subnet(`SUBNET_PUBLIC_${i}`, {
             vpcId: main.id,
@@ -90,6 +92,7 @@ available.then(result => {
             },
             availabilityZone: az[i],
         });
+        subnet_pub_1 = subpub;
 
         new aws.ec2.RouteTableAssociation(`subnet_router_association_${i}`, {
             subnetId: subpub.id,
@@ -152,27 +155,36 @@ available.then(result => {
 
 
     //create ec2
-    const custom_ami = aws.ec2.getAmi({
-        mostRecent: true,
-        filters: [
-            // {
-            //     name: "name",
-            //     values: ["csye*"],
-            // },
-            {
-                name: "virtualization-type",
-                values: ["hvm"],
-            },
-        ],
-    });
+    // const custom_ami = aws.ec2.getAmi({
+    //     mostRecent: true,
+    //     filters: [
+    //         // {
+    //         //     name: "name",
+    //         //     values: ["csye*"],
+    //         // },
+    //         {
+    //             name: "virtualization-type",
+    //             values: ["hvm"],
+    //         },
+    //     ],
+    // });
 
-    console.log('ami id-',custom_ami.then(custom_ami => console.log(custom_ami.id)))
+    // console.log('ami id-',custom_ami.then(custom_ami => console.log(custom_ami.id)))
+
+    let ami_id = "ami-0fb199cfb964d7326"
 
     const web = new aws.ec2.Instance("web", {
-        ami: custom_ami.then(custom_ami => custom_ami.id),
+        // ami: custom_ami.then(custom_ami => custom_ami.id),
+        ami: ami_id,
         instanceType: "t2.micro",
+        vpcSecurityGroupIds: [
+            app_sec_gr.id,
+        ],
+        subnetId:subnet_pub_1.id,
+        keyName: "webTest",
+        associatePublicIpAddress:true,
         tags: {
-            Name: "demo_ec2",
+            Name: "demo_ec2_1",
         },
     });
 
