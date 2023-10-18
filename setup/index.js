@@ -32,6 +32,7 @@ const available = aws.getAvailabilityZones();
 
 let az_list = []
 
+let ami_id = config.require("AMI")
 
 
 
@@ -171,7 +172,7 @@ available.then(result => {
 
     // console.log('ami id-',custom_ami.then(custom_ami => console.log(custom_ami.id)))
 
-    let ami_id = "ami-025f7fdba4cedd298"
+    
 
     const web = new aws.ec2.Instance("web", {
         // ami: custom_ami.then(custom_ami => custom_ami.id),
