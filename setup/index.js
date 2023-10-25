@@ -84,6 +84,8 @@ available.then(result => {
 
     let subnet_pub_1;
 
+    let subnet_pri_ids = []
+
     for(let i=0 ;i<az_count; i++){
         let subpub = new aws.ec2.Subnet(`SUBNET_PUBLIC_${i}`, {
             vpcId: main.id,
@@ -108,6 +110,8 @@ available.then(result => {
             },
             availabilityZone: az[i],
         });
+
+        subnet_pri_ids.push(subpriv.id)
 
         new aws.ec2.RouteTableAssociation(`subnet_private_router_association_${i}`, {
             subnetId: subpriv.id,
@@ -149,30 +153,105 @@ available.then(result => {
             protocol: "tcp",
             cidrBlocks: [ "0.0.0.0/0" ],
         }],
+        egress: [{
+            fromPort: 0,
+            toPort: 0,
+            protocol: "-1",
+            cidrBlocks: ["0.0.0.0/0"],
+            ipv6CidrBlocks: ["::/0"],
+        }],
         tags: {
             Name: "application_security_group",
         },
     });
 
+    //sec grp for rds
+    const rds_sec_gr = new aws.ec2.SecurityGroup("database_security_group", {
+        description: "allow traffic from app",
+        vpcId: main.id,
+        ingress: [{
+            description: "app ",
+            fromPort: 3306,
+            toPort: 3306,
+            protocol: "tcp",
+            securityGroups: [app_sec_gr.id]
+        }],
+        tags: {
+            Name: "database_security_group",
+        },
+    });
 
-    //create ec2
-    // const custom_ami = aws.ec2.getAmi({
-    //     mostRecent: true,
-    //     filters: [
-    //         // {
-    //         //     name: "name",
-    //         //     values: ["csye*"],
-    //         // },
-    //         {
-    //             name: "virtualization-type",
-    //             values: ["hvm"],
-    //         },
-    //     ],
-    // });
+    //para rds
+    const rdspara = new aws.rds.ParameterGroup("rdspara", {
+        family: "mysql5.7",
+        parameters: [
+            {
+                name: "character_set_server",
+                value: "utf8",
+            },
+            {
+                name: "character_set_client",
+                value: "utf8",
+            },
+        ],
+        name: "rdspara"
+    });
 
-    // console.log('ami id-',custom_ami.then(custom_ami => console.log(custom_ami.id)))
+    //rds subnet group
+    const rds_subnet_group = new aws.rds.SubnetGroup("rds_subnet_group", {
+        subnetIds: [
+            subnet_pri_ids[0],
+            subnet_pri_ids[1]
+        ],
+        name:"rds_subnet_group",
+        tags: {
+            Name: "rds_subnet_group",
+        },
+    });
 
+    let rds_user = config.require("RDS_USER")
+    let rds_password= config.require("RDS_PASSWORD")
+    let rds_db= config.require("RDS_DB")
+
+    //setup RDS
+    const rds = new aws.rds.Instance("csye6225", {
+        allocatedStorage: 10,
+        dbName: "csye6225",
+        engine: "mysql",
+        engineVersion: "5.7",
+        instanceClass: "db.t3.micro",
+        parameterGroupName: "default.mysql5.7",
+        password: rds_password,
+        skipFinalSnapshot: true,
+        username: rds_user,
+        publiclyAccessible: false,
+        multiAz: false,
+        vpcSecurityGroupIds: [rds_sec_gr.id],
+        parameterGroupName: "rdspara",
+        dbSubnetGroupName:"rds_subnet_group",
+        dbName: "cloudDB",
+    });
     
+    
+    const hostname = rds.endpoint.apply(endpoint => endpoint.split(":")[0]);
+ 
+ 
+    const user_data = pulumi
+    .all([rds.id, hostname])
+    .apply(([id, endpoint]) =>
+      `#!/bin/bash
+       echo "host=${endpoint}" > /etc/environment
+       echo "user=${rds_user}" >> /etc/environment
+       echo "password=${rds_password}" >> etc/environment
+       echo "database=${rds_db}" >> /etc/environment
+      `);
+
+//     let user_data = 
+//     `#!/bin/sh
+// echo "export host=csye62258936f45.c1d9714bidgz.us-east-1.rds.amazonaws.com" >> /etc/environment
+// echo "export user=csye6225" >> /etc/environment
+// echo "export password=mysqlmasterpassword" >> /etc/environment
+// `
 
     const web = new aws.ec2.Instance("web", {
         // ami: custom_ami.then(custom_ami => custom_ami.id),
@@ -193,100 +272,10 @@ available.then(result => {
             volumeType: "gp2", 
              
         },
+        userData: user_data,
+        dependsOn: [rds],
     });
 
     
 });
-
-// const subnet_public_1 = new aws.ec2.Subnet(SUBNET_PUBLIC_1, {
-//     vpcId: main.id,
-//     cidrBlock: subnet_public[0],
-//     tags: {
-//         Name: SUBNET_PUBLIC_1,
-//     },
-//     availabilityZone: az[0],
-// });
-
-// const subnet_public_2 = new aws.ec2.Subnet(SUBNET_PUBLIC_2, {
-//     vpcId: main.id,
-//     cidrBlock: subnet_public[1],
-//     tags: {
-//         Name: SUBNET_PUBLIC_2,
-//     },
-//     availabilityZone: az[1],
-// });
-
-// const subnet_public_3 = new aws.ec2.Subnet(SUBNET_PUBLIC_3, {
-//     vpcId: main.id,
-//     cidrBlock: subnet_public[2],
-//     tags: {
-//         Name: SUBNET_PUBLIC_3,
-//     },
-//     availabilityZone: az[2],
-// });
-
-// const subnet_private_1 = new aws.ec2.Subnet(SUBNET_PRIVATE_1, {
-//     vpcId: main.id,
-//     cidrBlock: subnet_private[0],
-//     tags: {
-//         Name: SUBNET_PRIVATE_1,
-//     },
-//     availabilityZone: az[0],
-// });
-
-// const subnet_private_2 = new aws.ec2.Subnet(SUBNET_PRIVATE_2, {
-//     vpcId: main.id,
-//     cidrBlock: subnet_private[1],
-//     tags: {
-//         Name: SUBNET_PRIVATE_2,
-//     },
-//     availabilityZone: az[1],
-// });
-
-// const subnet_private_3 = new aws.ec2.Subnet(SUBNET_PRIVATE_3, {
-//     vpcId: main.id,
-//     cidrBlock: subnet_private[2],
-//     tags: {
-//         Name: SUBNET_PRIVATE_3,
-//     },
-//     availabilityZone: az[2],
-// });
-
-
-
-
-
-
-
-// const subnet_router_association = new aws.ec2.RouteTableAssociation("subnet_router_association", {
-//     subnetId: subnet_public_1.id,
-//     routeTableId: route_table_public.id,
-// });
-
-// const subnet_router_association_2 = new aws.ec2.RouteTableAssociation("subnet_router_association_2", {
-//     subnetId: subnet_public_2.id,
-//     routeTableId: route_table_public.id,
-// });
-
-// const subnet_router_association_3 = new aws.ec2.RouteTableAssociation("subnet_router_association_3", {
-//     subnetId: subnet_public_3.id,
-//     routeTableId: route_table_public.id,
-// });
-
-
-// const subnet_private_router_association = new aws.ec2.RouteTableAssociation("subnet_private_router_association", {
-//     subnetId: subnet_private_1.id,
-//     routeTableId: route_table_private.id,
-// });
-
-// const subnet_private_router_association_2 = new aws.ec2.RouteTableAssociation("subnet_private_router_association_2", {
-//     subnetId: subnet_private_2.id,
-//     routeTableId: route_table_private.id,
-// });
-
-// const subnet_private_router_association_3 = new aws.ec2.RouteTableAssociation("subnet_private_router_association_3", {
-//     subnetId: subnet_private_3.id,
-//     routeTableId: route_table_private.id,
-// });
-
 
