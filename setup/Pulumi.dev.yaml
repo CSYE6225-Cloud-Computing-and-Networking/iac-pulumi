@@ -26,9 +26,10 @@ config:
   aws-pulumi:data.AZ[0]: us-east-1a
   aws-pulumi:data.AZ[1]: us-east-1b
   aws-pulumi:data.AZ[2]: us-east-1c
-  aws-pulumi:AMI: ami-004d00cca1c8579f1
+  aws-pulumi:AMI: ami-0731be104cfecd6ae
   aws-pulumi:RDS_PASSWORD: mysqlmasterpassword
   aws-pulumi:RDS_USER: csye6225
   aws-pulumi:RDS_DB: cloudDB
+  aws-pulumi:zoneId: Z08123651GOG8PRNSAPX4
   aws:profile: dev
   aws:region: us-east-1

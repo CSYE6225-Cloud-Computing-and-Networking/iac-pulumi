@@ -244,6 +244,7 @@ available.then(result => {
        echo "user=${rds_user}" >> /etc/environment
        echo "password=${rds_password}" >> etc/environment
        echo "database=${rds_db}" >> /etc/environment
+       sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -c file:/opt/config.json -s
       `);
 
 //     let user_data = 
@@ -252,6 +253,42 @@ available.then(result => {
 // echo "export user=csye6225" >> /etc/environment
 // echo "export password=mysqlmasterpassword" >> /etc/environment
 // `
+
+
+    const ec2Role = new aws.iam.Role("ec2Role", {
+        assumeRolePolicy: JSON.stringify({
+            Version: "2012-10-17",
+            Statement: [{
+                Action: "sts:AssumeRole",
+                Effect: "Allow",
+                Principal: {
+                    Service: "ec2.amazonaws.com",
+                },
+            }],
+        }),
+        tags: {
+            "Name": "ec2Role",
+        },
+    });
+
+    //arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy
+
+    const test_attach = new aws.iam.RolePolicyAttachment("test-attach", {
+        role: ec2Role.name,
+        policyArn: "arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy",
+    });
+
+    const test_attach2 = new aws.iam.RolePolicyAttachment("test-attach2", {
+        role: ec2Role.name,
+        policyArn: "arn:aws:iam::aws:policy/AmazonRoute53FullAccess",
+    });
+
+    const test_attach3 = new aws.iam.RolePolicyAttachment("test-attach3", {
+        role: ec2Role.name,
+        policyArn: "arn:aws:iam::aws:policy/IAMFullAccess",
+    });
+
+    const testProfile = new aws.iam.InstanceProfile("testProfile", {role: ec2Role.name});
 
     const web = new aws.ec2.Instance("web", {
         // ami: custom_ami.then(custom_ami => custom_ami.id),
@@ -274,6 +311,17 @@ available.then(result => {
         },
         userData: user_data,
         dependsOn: [rds],
+        iamInstanceProfile: testProfile
+    });
+
+    const zoneId = config.require("zoneId")
+
+    const dns_record = new aws.route53.Record("dns_record", {
+        zoneId: zoneId,
+        name: "ec2_record",
+        type: "A",
+        ttl: 300,
+        records: [web.publicIp],
     });
 
     
