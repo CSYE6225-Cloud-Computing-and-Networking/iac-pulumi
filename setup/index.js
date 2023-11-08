@@ -245,6 +245,7 @@ available.then(result => {
        echo "password=${rds_password}" >> etc/environment
        echo "database=${rds_db}" >> /etc/environment
        sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -c file:/opt/config.json -s
+       sudo touch /opt/user-data
       `);
 
 //     let user_data = 
@@ -298,7 +299,7 @@ available.then(result => {
             app_sec_gr.id,
         ],
         subnetId:subnet_pub_1.id,
-        keyName: "webTest",
+        keyName: "demoKey",
         associatePublicIpAddress:true,
         tags: {
             Name: "demo_ec2_1",
