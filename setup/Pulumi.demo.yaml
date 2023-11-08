@@ -1,9 +1,13 @@
 config:
+  aws-pulumi:AMI: ami-094abc148bccb8539
   aws-pulumi:AZ: us-east-1a us-east-1b us-east-1c
   aws-pulumi:AZ[0]: us-east-1a
   aws-pulumi:AZ[1]: us-east-1b
   aws-pulumi:AZ[2]: us-east-1c
   aws-pulumi:INTERNET_GATEWAY: gw
+  aws-pulumi:RDS_DB: cloudDB
+  aws-pulumi:RDS_PASSWORD: mysqlmasterpassword
+  aws-pulumi:RDS_USER: csye6225
   aws-pulumi:REGION: us-east-1
   aws-pulumi:ROUTE_TABLE_PRIVATE: route_table_private
   aws-pulumi:ROUTE_TABLE_PUBLIC: route_table_public
@@ -26,5 +30,7 @@ config:
   aws-pulumi:data.AZ[0]: us-east-1a
   aws-pulumi:data.AZ[1]: us-east-1b
   aws-pulumi:data.AZ[2]: us-east-1c
+  aws-pulumi:domain: cloudDB
+  aws-pulumi:zoneId: Z05054033K2F4B7K4ZWWB
   aws:profile: demo
   aws:region: us-east-1
