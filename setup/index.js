@@ -316,10 +316,11 @@ available.then(result => {
     });
 
     const zoneId = config.require("zoneId")
+    const domain = config.require("domain")
 
     const dns_record = new aws.route53.Record("dns_record", {
         zoneId: zoneId,
-        name: "ec2_record",
+        name: domain,
         type: "A",
         ttl: 300,
         records: [web.publicIp],

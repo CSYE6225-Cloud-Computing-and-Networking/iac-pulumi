@@ -31,5 +31,6 @@ config:
   aws-pulumi:RDS_USER: csye6225
   aws-pulumi:RDS_DB: cloudDB
   aws-pulumi:zoneId: Z08123651GOG8PRNSAPX4
+  aws-pulumi:domain: dev.neucloud.me
   aws:profile: dev
   aws:region: us-east-1
