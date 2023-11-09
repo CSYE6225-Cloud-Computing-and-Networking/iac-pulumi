@@ -30,7 +30,7 @@ config:
   aws-pulumi:data.AZ[0]: us-east-1a
   aws-pulumi:data.AZ[1]: us-east-1b
   aws-pulumi:data.AZ[2]: us-east-1c
-  aws-pulumi:domain: cloudDB
   aws-pulumi:zoneId: Z05054033K2F4B7K4ZWWB
+  aws-pulumi:domain: demo.neucloud.me
   aws:profile: demo
   aws:region: us-east-1
