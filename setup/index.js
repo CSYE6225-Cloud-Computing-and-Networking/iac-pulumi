@@ -169,7 +169,7 @@ available.then(result => {
             fromPort: 22,
             toPort: 22,
             protocol: "tcp",
-            // securityGroups: [lb_sec_gr.id]
+            securityGroups: [lb_sec_gr.id],
             cidrBlocks: [ "0.0.0.0/0" ],
         },
             // {
