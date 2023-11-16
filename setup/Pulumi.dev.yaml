@@ -26,11 +26,12 @@ config:
   aws-pulumi:data.AZ[0]: us-east-1a
   aws-pulumi:data.AZ[1]: us-east-1b
   aws-pulumi:data.AZ[2]: us-east-1c
-  aws-pulumi:AMI: ami-039bceed5ee893831
+  aws-pulumi:AMI: ami-05f227f9c8dca851e
   aws-pulumi:RDS_PASSWORD: mysqlmasterpassword
   aws-pulumi:RDS_USER: csye6225
   aws-pulumi:RDS_DB: cloudDB
   aws-pulumi:zoneId: Z08123651GOG8PRNSAPX4
   aws-pulumi:domain: dev.neucloud.me
+  aws-pulumi:key: webTest
   aws:profile: dev
   aws:region: us-east-1
