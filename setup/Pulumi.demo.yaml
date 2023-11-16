@@ -1,5 +1,5 @@
 config:
-  aws-pulumi:AMI: ami-094abc148bccb8539
+  aws-pulumi:AMI: ami-05f227f9c8dca851e
   aws-pulumi:AZ: us-east-1a us-east-1b us-east-1c
   aws-pulumi:AZ[0]: us-east-1a
   aws-pulumi:AZ[1]: us-east-1b
@@ -32,5 +32,6 @@ config:
   aws-pulumi:data.AZ[2]: us-east-1c
   aws-pulumi:zoneId: Z05054033K2F4B7K4ZWWB
   aws-pulumi:domain: demo.neucloud.me
+  aws-pulumi:key: demoKey
   aws:profile: demo
   aws:region: us-east-1

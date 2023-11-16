@@ -84,6 +84,7 @@ available.then(result => {
 
     let subnet_pub_1;
 
+    let subnet_pub_ids = []
     let subnet_pri_ids = []
 
     for(let i=0 ;i<az_count; i++){
@@ -95,6 +96,7 @@ available.then(result => {
             },
             availabilityZone: az[i],
         });
+        subnet_pub_ids.push(subpub)
         subnet_pub_1 = subpub;
 
         new aws.ec2.RouteTableAssociation(`subnet_router_association_${i}`, {
@@ -120,9 +122,8 @@ available.then(result => {
 
     }
 
-    //ec2 security group
-
-    const app_sec_gr = new aws.ec2.SecurityGroup("application_security_group", {
+    //load balancer security group
+    const lb_sec_gr = new aws.ec2.SecurityGroup("lb_security_group", {
         description: "Allow TLS inbound traffic",
         vpcId: main.id,
         ingress: [{
@@ -133,25 +134,58 @@ available.then(result => {
             cidrBlocks: [ "0.0.0.0/0" ],
         },
         {
-            description: "TLS from VPC 22",
-            fromPort: 22,
-            toPort: 22,
-            protocol: "tcp",
-            cidrBlocks: [ "0.0.0.0/0" ],
-        },
-        {
             description: "TLS from VPC 80",
             fromPort: 80,
             toPort: 80,
             protocol: "tcp",
             cidrBlocks: [ "0.0.0.0/0" ],
+        }],
+        egress: [{
+            fromPort: 0,
+            toPort: 0,
+            protocol: "-1",
+            cidrBlocks: ["0.0.0.0/0"],
+            ipv6CidrBlocks: ["::/0"],
+        }],
+        tags: {
+            Name: "lb_security_group",
         },
+    });
+
+    //ec2 security group
+    const app_sec_gr = new aws.ec2.SecurityGroup("application_security_group", {
+        description: "Allow TLS inbound traffic",
+        vpcId: main.id,
+        ingress: [
+        // {
+        //     description: "TLS from VPC 443",
+        //     fromPort: 443,
+        //     toPort: 443,
+        //     protocol: "tcp",
+        //     cidrBlocks: [ "0.0.0.0/0" ],
+        // },
+        {
+            description: "TLS from VPC 22",
+            fromPort: 22,
+            toPort: 22,
+            protocol: "tcp",
+            // securityGroups: [lb_sec_gr.id]
+            cidrBlocks: [ "0.0.0.0/0" ],
+        },
+            // {
+            //     description: "TLS from VPC 80",
+            //     fromPort: 80,
+            //     toPort: 80,
+            //     protocol: "tcp",
+            //     cidrBlocks: [ "0.0.0.0/0" ],
+            // },
         {
             description: "TLS from VPC 8000",
             fromPort: 8000,
             toPort: 8000,
             protocol: "tcp",
-            cidrBlocks: [ "0.0.0.0/0" ],
+            securityGroups: [lb_sec_gr.id]
+            // cidrBlocks: [ "0.0.0.0/0" ],
         }],
         egress: [{
             fromPort: 0,
@@ -236,17 +270,34 @@ available.then(result => {
     const hostname = rds.endpoint.apply(endpoint => endpoint.split(":")[0]);
  
  
+    // const user_data = pulumi
+    // .all([rds.id, hostname])
+    // .apply(([id, endpoint]) =>
+    //   `#!/bin/bash
+    //    echo "host=${endpoint}" > /etc/environment
+    //    echo "user=${rds_user}" >> /etc/environment
+    //    echo "password=${rds_password}" >> etc/environment
+    //    echo "database=${rds_db}" >> /etc/environment
+    //    sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -c file:/opt/config.json -s
+    //    sudo touch /opt/user-data
+    //   `);
+
     const user_data = pulumi
     .all([rds.id, hostname])
-    .apply(([id, endpoint]) =>
-      `#!/bin/bash
-       echo "host=${endpoint}" > /etc/environment
-       echo "user=${rds_user}" >> /etc/environment
-       echo "password=${rds_password}" >> etc/environment
-       echo "database=${rds_db}" >> /etc/environment
-       sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -c file:/opt/config.json -s
-       sudo touch /opt/user-data
-      `);
+    .apply(([id, endpoint]) => {
+        const script = `#!/bin/bash
+        echo "host=${endpoint}" > /etc/environment
+        echo "user=${rds_user}" >> /etc/environment
+        echo "password=${rds_password}" >> etc/environment
+        echo "database=${rds_db}" >> /etc/environment
+        sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -c file:/opt/config.json -s
+        sudo touch /opt/user-data
+        `;
+
+        const base64UserData = Buffer.from(script).toString('base64');
+
+        return base64UserData;
+  });
 
 //     let user_data = 
 //     `#!/bin/sh
@@ -254,7 +305,11 @@ available.then(result => {
 // echo "export user=csye6225" >> /etc/environment
 // echo "export password=mysqlmasterpassword" >> /etc/environment
 // `
+    console.log('user data',user_data.toString())
+    let bufferObj = Buffer.from(user_data, "utf8");
+    const user_data_64 = bufferObj.toString("base64");
 
+    console.log('user data 64',user_data_64)
 
     const ec2Role = new aws.iam.Role("ec2Role", {
         assumeRolePolicy: JSON.stringify({
@@ -291,29 +346,80 @@ available.then(result => {
 
     const testProfile = new aws.iam.InstanceProfile("testProfile", {role: ec2Role.name});
 
-    const web = new aws.ec2.Instance("web", {
-        // ami: custom_ami.then(custom_ami => custom_ami.id),
-        ami: ami_id,
-        instanceType: "t2.micro",
-        vpcSecurityGroupIds: [
-            app_sec_gr.id,
-        ],
-        subnetId:subnet_pub_1.id,
-        keyName: "demoKey",
-        associatePublicIpAddress:true,
-        tags: {
-            Name: "demo_ec2_1",
-        },
-        rootBlockDevice: {
-            deleteOnTermination: true,
-            volumeSize: 25, 
-            volumeType: "gp2", 
-             
-        },
-        userData: user_data,
-        dependsOn: [rds],
-        iamInstanceProfile: testProfile
+    //Load balancer
+    const load_bal = new aws.lb.LoadBalancer("loadbal", {
+        internal: false,
+        loadBalancerType: "application",
+        securityGroups: [lb_sec_gr.id],
+        subnets: subnet_pub_ids.map(subnet => (subnet.id)),
+        enableDeletionProtection: false,
+
     });
+
+    //load balancer target group
+    const alb_target_group = new aws.lb.TargetGroup("albTargetGroup", {
+        targetType: "instance",
+        port: 80,
+        protocol: "TCP",
+        vpcId: main.id,
+    });
+
+    let key = config.require("key")
+    // auto scaling group
+
+    const launchTemplate = new aws.ec2.LaunchTemplate("appLaunchTemplate", {
+        imageId: ami_id,
+        instanceType: "t2.micro",
+        keyName: key,
+        userData: user_data,
+        iamInstanceProfile: {
+            name: testProfile.name,
+        },
+        networkInterfaces: [{
+            associatePublicIpAddress: true,
+            deleteOnTermination: true,
+            deviceIndex: 0,
+            securityGroups: [app_sec_gr.id],
+        }],
+    });
+    
+    const asg2 = new aws.autoscaling.Group("asg", {
+        vpcZoneIdentifiers: subnet_pub_ids,
+        desiredCapacity: 1,
+        maxSize: 3,
+        minSize: 1,
+        launchTemplate: {
+            id: launchTemplate.id,
+        },
+        defaultCooldown: 60,
+        targetGroupArns:[alb_target_group.arn]
+
+    });
+
+
+    // const web = new aws.ec2.Instance("web", {
+    //     // ami: custom_ami.then(custom_ami => custom_ami.id),
+    //     ami: ami_id,
+    //     instanceType: "t2.micro",
+    //     vpcSecurityGroupIds: [
+    //         app_sec_gr.id,
+    //     ],
+    //     subnetId:subnet_pub_1.id,
+    //     keyName: "demoKey",
+    //     associatePublicIpAddress:true,
+    //     tags: {
+    //         Name: "demo_ec2_1",
+    //     },
+    //     rootBlockDevice: {
+    //         deleteOnTermination: true,
+    //         volumeSize: 25, 
+    //         volumeType: "gp2", 
+             
+    //     },
+    //     userData: user_data,
+    //     dependsOn: [rds],
+    //     iamInstanceProfile: testProfile
+    // });
 
     const zoneId = config.require("zoneId")
     const domain = config.require("domain")
@@ -322,8 +428,50 @@ available.then(result => {
         zoneId: zoneId,
         name: domain,
         type: "A",
-        ttl: 300,
-        records: [web.publicIp],
+        // ttl: 300,
+        // records: [web.publicIp],
+        aliases: [{
+            name: load_bal.dnsName,
+            zoneId: load_bal.zoneId,
+            evaluateTargetHealth: true,
+        }],
+    });
+
+    const batPolicy = new aws.autoscaling.Policy("batPolicy", {
+        scalingAdjustment: 1,
+        adjustmentType: "ChangeInCapacity",
+        cooldown: 60,
+        autoscalingGroupName: asg2.name,
+    });
+
+    const batMetricAlarmUp = new aws.cloudwatch.MetricAlarm("batMetricAlarmUp", {
+        comparisonOperator: "GreaterThanOrEqualToThreshold",
+        evaluationPeriods: 2,
+        metricName: "CPUUtilization",
+        namespace: "AWS/EC2",
+        period: 60,
+        statistic: "Average",
+        threshold: 5,
+        dimensions: {
+            AutoScalingGroupName: asg2.name,
+        },
+        alarmDescription: "This metric monitors ec2 cpu utilization",
+        alarmActions: [batPolicy.arn],
+    });
+
+    const batMetricAlarmDown = new aws.cloudwatch.MetricAlarm("batMetricAlarmDown", {
+        comparisonOperator: "LessThanOrEqualToThreshold",
+        evaluationPeriods: 2,
+        metricName: "CPUUtilization",
+        namespace: "AWS/EC2",
+        period: 60,
+        statistic: "Average",
+        threshold: 3,
+        dimensions: {
+            AutoScalingGroupName: asg2.name,
+        },
+        alarmDescription: "This metric monitors ec2 cpu utilization",
+        alarmActions: [batPolicy.arn],
     });
 
     
