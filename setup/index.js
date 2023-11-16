@@ -170,7 +170,7 @@ available.then(result => {
             toPort: 22,
             protocol: "tcp",
             securityGroups: [lb_sec_gr.id],
-            cidrBlocks: [ "0.0.0.0/0" ],
+            // cidrBlocks: [ "0.0.0.0/0" ],
         },
             // {
             //     description: "TLS from VPC 80",
