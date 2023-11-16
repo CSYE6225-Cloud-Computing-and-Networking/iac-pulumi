@@ -363,6 +363,25 @@ available.then(result => {
         port: 8000,
         protocol: "HTTP",
         vpcId: main.id,
+        healthCheck: {
+            enabled: true,
+            interval: 30,
+            path: "/healthz", 
+            port: "traffic-port", 
+            protocol: "HTTP",
+            timeout: 10,
+            healthyThreshold: 2,
+            unhealthyThreshold: 2,
+        },
+    });
+
+    const listener = new aws.lb.Listener(`app-listener`, {
+        loadBalancerArn: load_bal.arn,
+        port: 80,
+        defaultActions: [{
+            type: "forward",
+            targetGroupArn: alb_target_group.arn, 
+        }],
     });
 
     const listener = new aws.lb.Listener(`app-listener`, {
