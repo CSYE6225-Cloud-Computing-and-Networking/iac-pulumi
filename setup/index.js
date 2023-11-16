@@ -356,12 +356,22 @@ available.then(result => {
 
     });
 
+    
+
     //load balancer target group
     const alb_target_group = new aws.lb.TargetGroup("albTargetGroup", {
-        targetType: "instance",
-        port: 80,
+        port: 8000,
         protocol: "HTTP",
         vpcId: main.id,
+    });
+
+    const listener = new aws.lb.Listener(`app-listener`, {
+        loadBalancerArn: load_bal.arn,
+        port: 80,
+        defaultActions: [{
+            type: "forward",
+            targetGroupArn: alb_target_group.arn, 
+        }],
     });
 
     let key = config.require("key")
@@ -395,6 +405,7 @@ available.then(result => {
         targetGroupArns:[alb_target_group.arn]
 
     });
+
 
 
     // const web = new aws.ec2.Instance("web", {
