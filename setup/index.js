@@ -458,7 +458,14 @@ available.then(result => {
         }],
     });
 
-    const batPolicy = new aws.autoscaling.Policy("batPolicy", {
+    const batPolicyUp = new aws.autoscaling.Policy("batPolicyUp", {
+        scalingAdjustment: 1,
+        adjustmentType: "ChangeInCapacity",
+        cooldown: 60,
+        autoscalingGroupName: asg2.name,
+    });
+
+    const batPolicyDown = new aws.autoscaling.Policy("batPolicyDown", {
         scalingAdjustment: 1,
         adjustmentType: "ChangeInCapacity",
         cooldown: 60,
@@ -477,7 +484,7 @@ available.then(result => {
             AutoScalingGroupName: asg2.name,
         },
         alarmDescription: "This metric monitors ec2 cpu utilization",
-        alarmActions: [batPolicy.arn],
+        alarmActions: [batPolicyUp.arn],
     });
 
     const batMetricAlarmDown = new aws.cloudwatch.MetricAlarm("batMetricAlarmDown", {
@@ -492,7 +499,7 @@ available.then(result => {
             AutoScalingGroupName: asg2.name,
         },
         alarmDescription: "This metric monitors ec2 cpu utilization",
-        alarmActions: [batPolicy.arn],
+        alarmActions: [batPolicyDown.arn],
     });
 
     
