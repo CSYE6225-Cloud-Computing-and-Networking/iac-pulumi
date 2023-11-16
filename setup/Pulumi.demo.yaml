@@ -1,5 +1,5 @@
 config:
-  aws-pulumi:AMI: ami-05f227f9c8dca851e
+  aws-pulumi:AMI: ami-00107e83eea93fef7
   aws-pulumi:AZ: us-east-1a us-east-1b us-east-1c
   aws-pulumi:AZ[0]: us-east-1a
   aws-pulumi:AZ[1]: us-east-1b
