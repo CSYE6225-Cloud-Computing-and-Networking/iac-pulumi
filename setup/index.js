@@ -360,7 +360,7 @@ available.then(result => {
     const alb_target_group = new aws.lb.TargetGroup("albTargetGroup", {
         targetType: "instance",
         port: 80,
-        protocol: "TCP",
+        protocol: "HTTP",
         vpcId: main.id,
     });
 
