@@ -466,7 +466,7 @@ available.then(result => {
     });
 
     const batPolicyDown = new aws.autoscaling.Policy("batPolicyDown", {
-        scalingAdjustment: 1,
+        scalingAdjustment: -1,
         adjustmentType: "ChangeInCapacity",
         cooldown: 60,
         autoscalingGroupName: asg2.name,
