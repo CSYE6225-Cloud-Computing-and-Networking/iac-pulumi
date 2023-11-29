@@ -1,5 +1,5 @@
 config:
-  aws-pulumi:AMI: ami-00107e83eea93fef7
+  aws-pulumi:AMI: ami-07dee1a363a604b7a
   aws-pulumi:AZ: us-east-1a us-east-1b us-east-1c
   aws-pulumi:AZ[0]: us-east-1a
   aws-pulumi:AZ[1]: us-east-1b
@@ -32,6 +32,9 @@ config:
   aws-pulumi:data.AZ[2]: us-east-1c
   aws-pulumi:zoneId: Z05054033K2F4B7K4ZWWB
   aws-pulumi:domain: demo.neucloud.me
+  aws-pulumi:gcpServiceAcc: cyse-demo-406606
+  aws-pulumi:mailKey: a8d062fb5fc2fc7d37d622cdcdba57e4-30b58138-6293f4f8
   aws-pulumi:key: demoKey
   aws:profile: demo
   aws:region: us-east-1
+  gcp:project: cyse-demo-406606

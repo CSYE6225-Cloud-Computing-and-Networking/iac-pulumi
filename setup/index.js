@@ -2,6 +2,7 @@
 const pulumi = require("@pulumi/pulumi");
 const aws = require("@pulumi/aws");
 const awsx = require("@pulumi/awsx");
+const gcp = require("@pulumi/gcp");
 
 require('dotenv').config();
 let config = new pulumi.Config();
@@ -49,7 +50,7 @@ const main = new aws.ec2.Vpc(VPC_NAME, {
 available.then(result => {
     az_list= result.names
     let az_count =3;
-    console.log('azlist',az_list)
+    // console.log('azlist',az_list)
     if(az_list.length<az_count){
         az_count=az_list.length
     }
@@ -170,7 +171,7 @@ available.then(result => {
             toPort: 22,
             protocol: "tcp",
             securityGroups: [lb_sec_gr.id],
-            // cidrBlocks: [ "0.0.0.0/0" ],
+            cidrBlocks: [ "0.0.0.0/0" ],
         },
             // {
             //     description: "TLS from VPC 80",
@@ -184,8 +185,8 @@ available.then(result => {
             fromPort: 8000,
             toPort: 8000,
             protocol: "tcp",
-            securityGroups: [lb_sec_gr.id]
-            // cidrBlocks: [ "0.0.0.0/0" ],
+            securityGroups: [lb_sec_gr.id],
+            cidrBlocks: [ "0.0.0.0/0" ],
         }],
         egress: [{
             fromPort: 0,
@@ -282,9 +283,14 @@ available.then(result => {
     //    sudo touch /opt/user-data
     //   `);
 
+    //sns
+    const snsTopic = new aws.sns.Topic("snsTopic", {
+
+    });
+
     const user_data = pulumi
-    .all([rds.id, hostname])
-    .apply(([id, endpoint]) => {
+    .all([rds.id, hostname, snsTopic.arn])
+    .apply(([id, endpoint, arn]) => {
         const script = `#!/bin/bash
         echo "host=${endpoint}" > /etc/environment
         echo "user=${rds_user}" >> /etc/environment
@@ -292,8 +298,9 @@ available.then(result => {
         echo "database=${rds_db}" >> /etc/environment
         sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -c file:/opt/config.json -s
         sudo touch /opt/user-data
+        echo "snsTopic=${arn}" >> /etc/environment
         `;
-
+        // console.log('script',script)
         const base64UserData = Buffer.from(script).toString('base64');
 
         return base64UserData;
@@ -305,11 +312,11 @@ available.then(result => {
 // echo "export user=csye6225" >> /etc/environment
 // echo "export password=mysqlmasterpassword" >> /etc/environment
 // `
-    console.log('user data',user_data.toString())
+    // console.log('user data',user_data.toString())
     let bufferObj = Buffer.from(user_data, "utf8");
     const user_data_64 = bufferObj.toString("base64");
 
-    console.log('user data 64',user_data_64)
+    // console.log('user data 64',user_data_64)
 
     const ec2Role = new aws.iam.Role("ec2Role", {
         assumeRolePolicy: JSON.stringify({
@@ -344,6 +351,11 @@ available.then(result => {
         policyArn: "arn:aws:iam::aws:policy/IAMFullAccess",
     });
 
+    const test_attach4 = new aws.iam.RolePolicyAttachment("test-attach4", {
+        role: ec2Role.name,
+        policyArn: "arn:aws:iam::aws:policy/AmazonSNSFullAccess",
+    });
+
     const testProfile = new aws.iam.InstanceProfile("testProfile", {role: ec2Role.name});
 
     //Load balancer
@@ -375,14 +387,14 @@ available.then(result => {
         },
     });
 
-    const listener = new aws.lb.Listener(`app-listener`, {
-        loadBalancerArn: load_bal.arn,
-        port: 80,
-        defaultActions: [{
-            type: "forward",
-            targetGroupArn: alb_target_group.arn, 
-        }],
-    });
+    // const listener = new aws.lb.Listener(`app-listener`, {
+    //     loadBalancerArn: load_bal.arn,
+    //     port: 80,
+    //     defaultActions: [{
+    //         type: "forward",
+    //         targetGroupArn: alb_target_group.arn, 
+    //     }],
+    // });
 
     let key = config.require("key")
     // auto scaling group
@@ -426,7 +438,7 @@ available.then(result => {
     //         app_sec_gr.id,
     //     ],
     //     subnetId:subnet_pub_1.id,
-    //     keyName: "demoKey",
+    //     keyName: key,
     //     associatePublicIpAddress:true,
     //     tags: {
     //         Name: "demo_ec2_1",
@@ -502,6 +514,124 @@ available.then(result => {
         alarmActions: [batPolicyDown.arn],
     });
 
-    
-});
 
+    
+
+    //gcp
+    const gcpServiceAcc = config.require("gcpServiceAcc")
+
+    const bucket = new gcp.storage.Bucket("bucket-webapp-cyse", {
+        location: "US"
+    });
+
+    const serviceAccount = new gcp.serviceaccount.Account("serviceAccount", {
+        accountId: gcpServiceAcc,
+        displayName: "Service Account",
+    });
+
+    const gcpKey = new gcp.serviceaccount.Key("gcpKey", {
+        serviceAccountId: serviceAccount.name,
+        publicKeyType: "TYPE_X509_PEM_FILE",
+    });
+
+    
+
+    const admin_account_iam = new gcp.serviceaccount.IAMBinding("admin-account-iam", {
+        serviceAccountId: serviceAccount.name,
+        role: "roles/iam.serviceAccountUser",
+        members: ["user:nishith0514@gmail.com"],
+    });
+    
+
+    //DynamoDb
+    const Users_table = new aws.dynamodb.Table("users", {
+        // define possible hash and range key attributes only
+        
+        attributes: [
+            {
+                name: 'email',
+                type: 'S' 
+            },
+            {
+                name: 'submission',
+                type: 'S' 
+            }
+        ],
+        hashKey: 'email',
+        rangeKey: 'submission',
+        billingMode: 'PROVISIONED', 
+    
+        writeCapacity: 5,
+        readCapacity: 5
+    });
+
+
+    //lambda
+    const role = new aws.iam.Role("lambdaRole", {
+        assumeRolePolicy: JSON.stringify({
+            Version: "2012-10-17",
+            Statement: [
+                {
+                    Action: "sts:AssumeRole",
+                    Principal: {
+                        Service: "lambda.amazonaws.com",
+                    },
+                    Effect: "Allow",
+                    Sid: "",
+                },
+            ],
+        }),
+    });
+
+    new aws.iam.RolePolicyAttachment("lambdaAccess", {
+        role: role.name,
+        policyArn: "arn:aws:iam::aws:policy/AWSLambda_FullAccess",
+    });   
+
+    new aws.iam.RolePolicyAttachment("lambdaCloudwatchAccess", {
+        role: role.name,
+        policyArn: "arn:aws:iam::aws:policy/CloudWatchLogsFullAccess",
+    });
+    
+    new aws.iam.RolePolicyAttachment("lambdaDynamoAccess", {
+        role: role.name,
+        policyArn: "arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess",
+    }); 
+
+    new aws.iam.RolePolicyAttachment("lambdaSNSAccess", {
+        role: role.name,
+        policyArn: "arn:aws:iam::aws:policy/AmazonSNSFullAccess",
+    }); 
+
+
+    const zipFilePath = "../../serverless/serv/index.zip"; 
+    const mailKey = config.require("mailKey")
+
+    // Define the AWS Lambda function
+    const lambda3 = new aws.lambda.Function("myfunction", {
+        role: role.arn,
+        runtime:  "nodejs18.x",
+        handler: "index.handler",
+        code: new pulumi.asset.FileArchive(zipFilePath),
+        environment: {
+            variables: {
+                dbName: Users_table.name,
+                gcpBucket: bucket.name,
+                serviceAccount: serviceAccount.name,
+                privateKey: gcpKey.privateKey,
+                mailKey : mailKey
+            },
+        },
+    });
+    
+
+    const snsSubscription = new aws.sns.TopicSubscription("mySnsSubscription", {
+        protocol: "lambda",
+        endpoint: lambda3.arn,
+        topic: snsTopic.arn,
+    });
+
+        
+    });
+
+    //https://github.com/NishithKody/Neetcode/archive/refs/heads/main.zip
