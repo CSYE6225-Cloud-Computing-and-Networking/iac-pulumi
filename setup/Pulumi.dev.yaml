@@ -1,9 +1,13 @@
 config:
+  aws-pulumi:AMI: ami-07dee1a363a604b7a
   aws-pulumi:AZ: us-east-1a us-east-1b us-east-1c
   aws-pulumi:AZ[0]: us-east-1a
   aws-pulumi:AZ[1]: us-east-1b
   aws-pulumi:AZ[2]: us-east-1c
   aws-pulumi:INTERNET_GATEWAY: gw
+  aws-pulumi:RDS_DB: cloudDB
+  aws-pulumi:RDS_PASSWORD: mysqlmasterpassword
+  aws-pulumi:RDS_USER: csye6225
   aws-pulumi:REGION: us-east-1
   aws-pulumi:ROUTE_TABLE_PRIVATE: route_table_private
   aws-pulumi:ROUTE_TABLE_PUBLIC: route_table_public
@@ -26,12 +30,12 @@ config:
   aws-pulumi:data.AZ[0]: us-east-1a
   aws-pulumi:data.AZ[1]: us-east-1b
   aws-pulumi:data.AZ[2]: us-east-1c
-  aws-pulumi:AMI: ami-00107e83eea93fef7
-  aws-pulumi:RDS_PASSWORD: mysqlmasterpassword
-  aws-pulumi:RDS_USER: csye6225
-  aws-pulumi:RDS_DB: cloudDB
-  aws-pulumi:zoneId: Z08123651GOG8PRNSAPX4
   aws-pulumi:domain: dev.neucloud.me
   aws-pulumi:key: webTest
+  aws-pulumi:zoneId: Z08123651GOG8PRNSAPX4
+  aws-pulumi:gcpServiceAcc: csye-dev-405920
+  aws-pulumi:mailKey: a8d062fb5fc2fc7d37d622cdcdba57e4-30b58138-6293f4f8
   aws:profile: dev
   aws:region: us-east-1
+  gcp:project: csye-dev-405920
+ 
