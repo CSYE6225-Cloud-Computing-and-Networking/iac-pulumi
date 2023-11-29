@@ -346,10 +346,10 @@ available.then(result => {
         policyArn: "arn:aws:iam::aws:policy/AmazonRoute53FullAccess",
     });
 
-    const test_attach3 = new aws.iam.RolePolicyAttachment("test-attach3", {
-        role: ec2Role.name,
-        policyArn: "arn:aws:iam::aws:policy/IAMFullAccess",
-    });
+    // const test_attach3 = new aws.iam.RolePolicyAttachment("test-attach3", {
+    //     role: ec2Role.name,
+    //     policyArn: "arn:aws:iam::aws:policy/IAMFullAccess",
+    // });
 
     const test_attach4 = new aws.iam.RolePolicyAttachment("test-attach4", {
         role: ec2Role.name,
