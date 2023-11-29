@@ -387,14 +387,14 @@ available.then(result => {
         },
     });
 
-    // const listener = new aws.lb.Listener(`app-listener`, {
-    //     loadBalancerArn: load_bal.arn,
-    //     port: 80,
-    //     defaultActions: [{
-    //         type: "forward",
-    //         targetGroupArn: alb_target_group.arn, 
-    //     }],
-    // });
+    const listener = new aws.lb.Listener(`app-listener`, {
+        loadBalancerArn: load_bal.arn,
+        port: 80,
+        defaultActions: [{
+            type: "forward",
+            targetGroupArn: alb_target_group.arn, 
+        }],
+    });
 
     let key = config.require("key")
     // auto scaling group
@@ -525,8 +525,9 @@ available.then(result => {
     });
 
     const serviceAccount = new gcp.serviceaccount.Account("serviceAccount", {
-        accountId: gcpServiceAcc,
+        accountId: "ser-acc",
         displayName: "Service Account",
+        project: gcpServiceAcc
     });
 
     const gcpKey = new gcp.serviceaccount.Key("gcpKey", {
@@ -534,13 +535,34 @@ available.then(result => {
         publicKeyType: "TYPE_X509_PEM_FILE",
     });
 
-    
+    const serviceAccountEmail = serviceAccount.email;
 
-    const admin_account_iam = new gcp.serviceaccount.IAMBinding("admin-account-iam", {
-        serviceAccountId: serviceAccount.name,
-        role: "roles/iam.serviceAccountUser",
-        members: ["user:nishith0514@gmail.com"],
+    // Apply the Pulumi program
+    pulumi.all([serviceAccountEmail]).apply(([email]) => {
+        const bucketIAMMember = new gcp.storage.BucketIAMMember("bucketIAMMember", {
+            bucket: bucket.name,
+            role: "roles/storage.admin",
+            member:`serviceAccount:${email}`, 
+          });
+        console.log(`Service Account Email: ${email}`);
     });
+    
+   
+
+    // const roleName = "roles/storage.admin"; 
+    // const policy = new gcp.projects.IAMPolicy(`role-serv-policy`, {
+    //     project: gcp.config.project,
+    //     bindings: [{
+    //         role: roleName,
+    //         members: [`serviceAccount:${serviceAccount.email}`],
+    //     }],
+    // });
+
+    // const admin_account_iam = new gcp.serviceaccount.IAMBinding("admin-account-iam", {
+    //     serviceAccountId: serviceAccount.name,
+    //     role: "roles/storage.admin",
+    //     members: ["user:nishith0514@gmail.com"],
+    // });
     
 
     //DynamoDb
@@ -557,8 +579,8 @@ available.then(result => {
                 type: 'S' 
             }
         ],
-        hashKey: 'email',
-        rangeKey: 'submission',
+        hashKey: 'submission',
+        rangeKey: 'email',
         billingMode: 'PROVISIONED', 
     
         writeCapacity: 5,
@@ -629,6 +651,13 @@ available.then(result => {
         protocol: "lambda",
         endpoint: lambda3.arn,
         topic: snsTopic.arn,
+    });
+
+    const lambdaPermission = new aws.lambda.Permission("snsLambdaPermission", {
+        action: "lambda:InvokeFunction",
+        function: lambda3.arn,
+        principal: "sns.amazonaws.com",
+        sourceArn: snsTopic.arn,
     });
 
         
