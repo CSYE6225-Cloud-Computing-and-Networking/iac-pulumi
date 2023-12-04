@@ -34,6 +34,7 @@ config:
   aws-pulumi:domain: demo.neucloud.me
   aws-pulumi:gcpServiceAcc: cyse-demo-406606
   aws-pulumi:mailKey: a8d062fb5fc2fc7d37d622cdcdba57e4-30b58138-6293f4f8
+  aws-pulumi:ssl_crt: arn:aws:acm:us-east-1:315818784251:certificate/fcbddc93-c760-401e-8905-8fd97a74ea5d
   aws-pulumi:key: demoKey
   aws:profile: demo
   aws:region: us-east-1

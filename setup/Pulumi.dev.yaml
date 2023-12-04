@@ -35,6 +35,7 @@ config:
   aws-pulumi:zoneId: Z08123651GOG8PRNSAPX4
   aws-pulumi:gcpServiceAcc: csye-dev-405920
   aws-pulumi:mailKey: a8d062fb5fc2fc7d37d622cdcdba57e4-30b58138-6293f4f8
+  aws-pulumi:ssl_crt: arn:aws:acm:us-east-1:995720948536:certificate/b372573a-aacf-4d22-b4be-073a19322b78
   aws:profile: dev
   aws:region: us-east-1
   gcp:project: csye-dev-405920
