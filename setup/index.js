@@ -171,7 +171,7 @@ available.then(result => {
             toPort: 22,
             protocol: "tcp",
             securityGroups: [lb_sec_gr.id],
-            cidrBlocks: [ "0.0.0.0/0" ],
+            // cidrBlocks: [ "0.0.0.0/0" ],
         },
             // {
             //     description: "TLS from VPC 80",
@@ -186,7 +186,7 @@ available.then(result => {
             toPort: 8000,
             protocol: "tcp",
             securityGroups: [lb_sec_gr.id],
-            cidrBlocks: [ "0.0.0.0/0" ],
+            // cidrBlocks: [ "0.0.0.0/0" ],
         }],
         egress: [{
             fromPort: 0,
@@ -380,19 +380,33 @@ available.then(result => {
             interval: 30,
             path: "/healthz", 
             port: "traffic-port", 
-            protocol: "HTTP",
+            protocol: "HTTPS",
             timeout: 10,
             healthyThreshold: 2,
             unhealthyThreshold: 2,
         },
     });
 
-    const listener = new aws.lb.Listener(`app-listener`, {
+    // const listener = new aws.lb.Listener(`app-listener`, {
+    //     loadBalancerArn: load_bal.arn,
+    //     port: 80,
+    //     defaultActions: [{
+    //         type: "forward",
+    //         targetGroupArn: alb_target_group.arn, 
+    //     }],
+    // });
+
+    let alb_ssl_crt = config.require("ssl_crt")
+
+    const frontEndListener = new aws.lb.Listener("app-listener", {
         loadBalancerArn: load_bal.arn,
-        port: 80,
+        port: 443,
+        protocol: "HTTPS",
+        sslPolicy: "ELBSecurityPolicy-2016-08",
+        certificateArn: alb_ssl_crt,
         defaultActions: [{
             type: "forward",
-            targetGroupArn: alb_target_group.arn, 
+            targetGroupArn: alb_target_group.arn,
         }],
     });
 
@@ -469,6 +483,28 @@ available.then(result => {
             evaluateTargetHealth: true,
         }],
     });
+
+    //Certificate
+    // const issued_cert = aws.acm.getCertificate({
+    //     domain: "dev.neucloud.me",
+    // })
+
+    // const certValidation = new aws.route53.Record("certValidation", {
+    //     name: "cert_vali",
+    //     records: [issued_cert.domainValidationOptions[0].resourceRecordValue],
+    //     ttl: 60,
+    //     type: "CNAME",
+    //     zoneId: zoneId,
+    // });
+    
+    // const certCertificateValidation = new aws.acm.CertificateValidation("cert", {
+    //     certificateArn: issued_cert,
+    //     validationRecordFqdns: [certValidation.fqdn],
+    // });
+
+    // const exampleCertificateValidation = new aws.acm.CertificateValidation("exampleCertificateValidation", {
+    //     certificateArn: issued_cert.arn,
+    // });
 
     const batPolicyUp = new aws.autoscaling.Policy("batPolicyUp", {
         scalingAdjustment: 1,
